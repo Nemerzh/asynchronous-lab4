@@ -16,9 +16,6 @@ public class CompletableFutureSequence {
                     .toArray();
         });
 
-        long end = System.currentTimeMillis();
-        System.out.println("Загальний час виконання: " + (end - start) + " мс");
-
         // Обчислюємо добуток (a2 - a1) * (a3 - a2) * ... * (an - an-1)
         CompletableFuture<Double> calculateProduct = generateSequence.thenApplyAsync(sequence -> {
             log("Обчислення добутку різниць між сусідніми елементами");

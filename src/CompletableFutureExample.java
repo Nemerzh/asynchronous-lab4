@@ -1,13 +1,11 @@
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 public class CompletableFutureExample {
 
     public static void main(String[] args) {
-        long start = System.currentTimeMillis();
+        long startGen = System.currentTimeMillis();
 
         // Асинхронно генеруємо масив з 10 чисел
         CompletableFuture<int[]> generateArray = CompletableFuture.supplyAsync(() -> {
@@ -17,19 +15,38 @@ public class CompletableFutureExample {
                     .toArray();
         });
 
-        // Асинхронно додаємо +10 до кожного елементу
+        // Вимірюємо час завершення генерації масиву
+        CompletableFuture<Void> generationTime = generateArray.thenRunAsync(() -> {
+            long end = System.currentTimeMillis();
+            log("Масив згенеровано. Час генерації: " + (end - startGen) + " мс");
+        });
+
+        long startAdd = System.currentTimeMillis();
+        // Додаємо +10 до кожного елемента
         CompletableFuture<int[]> addTen = generateArray.thenApplyAsync(array -> {
             log("Додавання +10 до кожного елементу");
             return IntStream.of(array).map(num -> num + 10).toArray();
         });
 
-        // Асинхронно ділимо кожен елемент на 2
+        // Вимірюємо час завершення додавання
+        CompletableFuture<Void> additionTime = addTen.thenRunAsync(() -> {
+            long end = System.currentTimeMillis();
+            log("Додавання завершено. Час додавання: " + (end - startAdd) + " мс");
+        });
+        long startDiv = System.currentTimeMillis();
+        // Ділимо кожен елемент на 2
         CompletableFuture<double[]> divideByTwo = addTen.thenApplyAsync(array -> {
             log("Ділення кожного елементу на 2");
             return IntStream.of(array).mapToDouble(num -> num / 2.0).toArray();
         });
 
-        // Асинхронно виводимо початковий і проміжні масиви
+        // Вимірюємо час завершення ділення
+        CompletableFuture<Void> divisionTime = divideByTwo.thenRunAsync(() -> {
+            long end = System.currentTimeMillis();
+            log("Ділення завершено. Час ділення: " + (end - startDiv) + " мс");
+        });
+
+        // Виводимо результати
         CompletableFuture<Void> allTasks = CompletableFuture.allOf(
                 generateArray.thenAcceptAsync(array -> log("Початковий масив: " + arrayToString(array))),
                 addTen.thenAcceptAsync(array -> log("Масив після додавання +10: " + arrayToString(array))),
@@ -38,14 +55,11 @@ public class CompletableFutureExample {
 
         allTasks.join();
 
-        long end = System.currentTimeMillis();
-        System.out.println("Загальний час виконання: " + (end - start) + " мс");
     }
 
     private static void log(String message) {
         System.out.println("[" + Thread.currentThread().getName() + "] " + message);
     }
-
 
     private static String arrayToString(int[] array) {
         StringBuilder sb = new StringBuilder("[");
@@ -60,7 +74,7 @@ public class CompletableFutureExample {
     private static String arrayToString(double[] array) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < array.length; i++) {
-            if (i == array.length - 1){
+            if (i == array.length - 1) {
                 sb.append(array[i]);
             } else {
                 sb.append(array[i]).append(", ");
